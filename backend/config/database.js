@@ -8,6 +8,6 @@ exports.ConnectDb = ()=>{
   .catch((error)=>{
     console.log("Database is not connected");
     console.error(error);
-    process.exist(1);
+    process.exit(1);
   })
 }

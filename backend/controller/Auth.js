@@ -50,7 +50,12 @@ exports.registerController = async (req, res) => {
     );
 
     // Store JWT in cookie
-    res.cookie("token", token);
+        res.cookie("token", token, {
+          httpOnly: true,
+          sameSite: "lax",
+          // secure: true,   // uncomment when you deploy over HTTPS
+          maxAge: 24 * 60 * 60 * 1000 // 1 day, matches your JWT expiry
+        });
 
     return res.status(201).json({
       success: true,
@@ -118,7 +123,12 @@ exports.logIn = async (req, res) => {
     );
 
     // Store JWT in cookie
-    res.cookie("token", token);
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      // secure: true,   // uncomment when you deploy over HTTPS
+      maxAge: 24 * 60 * 60 * 1000 // 1 day, matches your JWT expiry
+    });
 
     return res.status(200).json({
       message: "User logged in successfully",

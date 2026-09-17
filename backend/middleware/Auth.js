@@ -11,6 +11,12 @@ exports.Authuser = async (req,res,next) =>{
   }
 
   const isTokenBlacklisted= await blacklistToken.findOne({token}) 
+    if (isTokenBlacklisted) {
+    return res.status(401).json({
+      success: false,
+      message: "Token is no longer valid, please log in again"
+    })
+  }
   try {
     const decoded = jwt.verify(token,process.env.JWT_SECRET);
 
