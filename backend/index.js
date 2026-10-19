@@ -7,10 +7,15 @@ const app = express();
 //middleware
 const cookieParser = require("cookie-parser")
 app.use(express.json())
+
 app.use(cors({
-  origin: "http://localhost:5173", //  server's origin
-  credentials: true
+    origin: [
+        "http://localhost:5173",
+        "https://ai-resume-frontend-2b51.onrender.com"
+    ],
+    credentials: true
 }));
+
 app.use(cookieParser())
 require("dotenv").config();
 //database 
