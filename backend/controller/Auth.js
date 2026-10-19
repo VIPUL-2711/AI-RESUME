@@ -1,179 +1,258 @@
+
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
-const blacklist=require("../models/blacklist")
+const Blacklist = require("../models/blacklist");
 
+// Shared cookie settings for the deployed frontend and backend
+const cookieOptions = {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  maxAge: 24 * 60 * 60 * 1000,
+  path: "/",
+};
+
+// Register a new user
 exports.registerController = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // Validation
     if (!username || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: "All fields are required"
+        message: "Username, email, and password are required",
       });
     }
 
-    // Check whether user already exists
-    const isUserAlreadyExist = await User.findOne({
-      $or: [{ username }, { email }]
-    });
-
-    if (isUserAlreadyExist) {
+    if (
+      typeof username !== "string" ||
+      typeof email !== "string" ||
+      typeof password !== "string"
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Username or email already exists"
+        message: "Invalid input format",
       });
     }
 
-    // Hash password
-    const hash = await bcrypt.hash(password, 10);
+    const normalizedUsername = username.trim();
+    const normalizedEmail = email.trim().toLowerCase();
 
-    // Create user
-    const createUser = await User.create({
-      username,
-      email,
-      password: hash
+    if (!normalizedUsername || !normalizedEmail || !password.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Fields cannot be empty",
+      });
+    }
+
+    const existingUser = await User.findOne({
+      $or: [
+        { username: normalizedUsername },
+        { email: normalizedEmail },
+      ],
     });
 
-    // Generate JWT
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "Username or email already exists",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      username: normalizedUsername,
+      email: normalizedEmail,
+      password: hashedPassword,
+    });
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not configured");
+    }
+
     const token = jwt.sign(
       {
-        id: createUser._id,
-        username: createUser.username
+        id: user._id.toString(),
+        username: user.username,
       },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "1d"
-      }
+      { expiresIn: "1d" }
     );
 
-    res.cookie("token", token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    maxAge: 24 * 60 * 60 * 1000,
-    path: "/"
-});
+    res.cookie("token", token, cookieOptions);
 
     return res.status(201).json({
       success: true,
-      message: "User created successfully",
+      message: "User registered successfully",
       user: {
-        id: createUser._id,
-        username: createUser.username,
-        email: createUser.email
-      }
+        id: user._id,
+        username: user.username,
+        email: user.email,
+      },
     });
-
   } catch (error) {
-    console.error(error);
+    console.error("Registration error:", error);
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Username or email already exists",
+      });
+    }
 
     return res.status(500).json({
       success: false,
-      message: "Failed to create user"
+      message: "Failed to register user",
     });
   }
 };
 
-
+// Log in an existing user
 exports.logIn = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
-    if (!email || !password) {
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !email.trim() ||
+      !password
+    ) {
       return res.status(400).json({
-        message: "Email and password are required"
+        success: false,
+        message: "Email and password are required",
       });
     }
 
-    // Find user
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
-      return res.status(400).json({
-        message: "Invalid email or password"
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
       });
     }
 
-    // Compare password
-    const isPasswordValid = await bcrypt.compare(
+    const passwordIsValid = await bcrypt.compare(
       password,
       user.password
     );
 
-    if (!isPasswordValid) {
-      return res.status(400).json({
-        message: "Invalid email or password"
+    if (!passwordIsValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
       });
     }
 
-    // Generate JWT
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not configured");
+    }
+
     const token = jwt.sign(
       {
-        id: user._id,
-        username: user.username
+        id: user._id.toString(),
+        username: user.username,
       },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "1d"
-      }
+      { expiresIn: "1d" }
     );
 
-
-res.cookie("token", token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    maxAge: 24 * 60 * 60 * 1000,
-    path: "/"
-});
+    res.cookie("token", token, cookieOptions);
 
     return res.status(200).json({
+      success: true,
       message: "User logged in successfully",
       user: {
         id: user._id,
         username: user.username,
-        email: user.email
-      }
+        email: user.email,
+      },
     });
-
   } catch (error) {
-    console.error(error);
+    console.error("Login error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Something went wrong"
+      message: "Login failed",
     });
   }
 };
 
-exports.logout = async (req,res) =>{
-  const token = req.cookies.token;
+// Log out the current user
+exports.logout = async (req, res) => {
+  try {
+    const token = req.cookies?.token;
 
-  if(token){
-    await blacklist.create({ token })
-  }
-  res.clearCookie("token")
-
-  return res.status(200).json({
-    success:true,
-    message:"User logged out succesfully"
-  })
-}
-
-exports.GetmeContoller = async (req,res) =>{
-  const user  =  await User.findById(req.user.id);
-  
-  return res.status(200).json({
-    success:true,
-    message:"user details fetched successfully",
-    user:{
-      id: user._id,
-      username:user.username,
-      email:user.email
+    if (token) {
+      await Blacklist.updateOne(
+        { token },
+        { $setOnInsert: { token } },
+        { upsert: true }
+      );
     }
-  })
-}
+
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "User logged out successfully",
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Logout failed",
+    });
+  }
+};
+
+// Get the currently authenticated user
+exports.GetmeContoller = async (req, res) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const user = await User.findById(req.user.id).select(
+      "_id username email"
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "User details fetched successfully",
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("Get user error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch user details",
+    });
+  }
+};
