@@ -22,6 +22,13 @@ app.use("/api/interview",interviewRouter);
 //app listen 
 const PORT = process.env.PORT || 3000;
 
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "AI Resume backend is running!"
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server is initiated on port ${PORT}`);
 });
