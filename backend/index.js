@@ -1,12 +1,17 @@
-const express=require("express");
+
+const express = require("express");
 const { ConnectDb } = require("../backend/config/database");
 const router = require("../backend/router/router");
-const interviewRouter= require("./router/interview");
-const cors= require("cors")
+const interviewRouter = require("./router/interview");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+
+require("dotenv").config();
+
 const app = express();
-//middleware
-const cookieParser = require("cookie-parser")
-app.use(express.json())
+
+// Middleware
+app.use(express.json());
 
 app.use(cors({
     origin: [
@@ -16,24 +21,24 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(cookieParser())
-require("dotenv").config();
-//database 
-ConnectDb();
-// routes 
-app.use("/api/auth",router);
-app.use("/api/interview",interviewRouter);
+app.use(cookieParser());
 
-//app listen 
-const PORT = process.env.PORT || 3000;
+// Database
+ConnectDb();
+
+// Routes
+app.use("/api/auth", router);
+app.use("/api/interview", interviewRouter);
 
 app.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "AI Resume backend is running!"
-  });
+    res.status(200).json({
+        success: true,
+        message: "AI Resume backend is running!"
+    });
 });
 
+const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-  console.log(`Server is initiated on port ${PORT}`);
+    console.log(`Server is initiated on port ${PORT}`);
 });
