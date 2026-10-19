@@ -2,6 +2,8 @@
 
 AI Resume is a web application that helps users analyze their resumes and prepare for interviews using artificial intelligence.
 
+##live :- https://ai-resume-frontend-2b51.onrender.com
+
 ## Features
 
 * User registration and login
