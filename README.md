@@ -1,131 +1,187 @@
-# AI Resume
+# AI Resume Analyzer & Interview Preparation
 
-AI Resume is a web application that helps users analyze their resumes and prepare for interviews using artificial intelligence.
+An AI-powered resume analysis and interview preparation application built with React, Node.js, Express, MongoDB, and the Google Gemini API.
 
-##live :- https://ai-resume-frontend-2b51.onrender.com
+The application accepts a PDF resume and a target job description, then generates a structured interview-preparation report. It also includes an AI-assisted resume PDF generation flow.
+
+**Live application:** https://ai-resume-frontend-2b51.onrender.com  
+**Repository:** https://github.com/VIPUL-2711/AI-RESUME
+
+---
 
 ## Features
 
-* User registration and login
-* JWT-based authentication
-* Secure password hashing
-* Resume PDF upload
-* Resume text extraction
-* AI-generated interview reports
-* Job description and resume analysis
-* MongoDB database integration
+- User registration, login, and logout
+- Password hashing with bcrypt
+- JWT-based authentication
+- PDF resume upload and text extraction
+- AI-generated interview preparation report using Google Gemini
+- Resume/job-description analysis with a match score
+- Technical and behavioral interview questions, with guidance for answering
+- Identified skill gaps with severity levels
+- Day-wise interview preparation plan
+- AI-generated resume HTML rendered to PDF using Puppeteer
+- Per-user interview report listing and retrieval
 
-## Technologies Used
+## Tech Stack
 
-### Frontend
+| Area | Technologies |
+|---|---|
+| Frontend | React, JavaScript, Vite, Axios, Sass |
+| Backend | Node.js, Express.js |
+| Database | MongoDB, Mongoose |
+| AI | Google Gemini API (@google/genai) |
+| Authentication | JSON Web Tokens, bcrypt, cookie-parser |
+| File handling | Multer, pdf-parse |
+| Validation / output structure | Zod |
+| PDF generation | Puppeteer |
 
-* React
-* JavaScript
-* Axios
+## Application Flow
 
-### Backend
-
-* Node.js
-* Express.js
-* MongoDB
-* Mongoose
-* JWT
-* bcrypt
-* Multer
-* Google Gemini API
+1. A user registers or logs in.
+2. The user uploads a PDF resume and provides a self-description and target job description.
+3. The backend extracts text from the PDF.
+4. The backend sends the candidate information and job description to the Gemini API.
+5. The generated report is stored in MongoDB and returned to the authenticated user.
+6. The user can retrieve saved reports and request an AI-generated resume PDF.
 
 ## Project Structure
 
-```text
+~~~text
 AI-RESUME/
 ├── backend/
-├── frontend/
+│   ├── config/
+│   ├── controller/
+│   ├── middleware/
+│   ├── models/
+│   ├── router/
+│   ├── services/
+│   ├── .env.example
+│   └── index.js
+├── Frontend/
+│   ├── src/
+│   ├── public/
+│   └── package.json
 └── README.md
-```
+~~~
 
-## Installation
+## Getting Started
 
-### Clone the repository
+### Prerequisites
 
-```bash
-git clone https://github.com/YOUR_USERNAME/AI-RESUME.git
+- Node.js and npm
+- A MongoDB database (local or hosted)
+- A Google Gemini API key
+
+### 1. Clone the repository
+
+~~~bash
+git clone https://github.com/VIPUL-2711/AI-RESUME.git
 cd AI-RESUME
-```
+~~~
 
-### Backend Setup
+### 2. Configure and run the backend
 
-```bash
+~~~bash
 cd backend
 npm install
-```
+~~~
 
-Create a `.env` file in the backend directory:
+Create a .env file in the backend/ directory. Use .env.example as the template:
 
-```env
+~~~env
 MONGODB_URL=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-GOOGLE_GENAI_API_KEY=your_google_genai_api_key
-PORT=3000
-```
+PORT=4000
+JWT_SECRET=your_long_random_jwt_secret
+GOOGLE_GENAI_API_KEY=your_google_gemini_api_key
+~~~
 
-Start the backend:
+Start the backend in development mode:
 
-```bash
+~~~bash
 npm run dev
-```
+~~~
 
-### Frontend Setup
+The backend listens on the port configured by PORT (the application falls back to port 3000 if it is not set).
 
-Open a new terminal:
+### 3. Configure and run the frontend
 
-```bash
-cd frontend
+Open a second terminal from the repository root:
+
+~~~bash
+cd Frontend
 npm install
 npm run dev
-```
+~~~
+
+Vite prints the local frontend URL in the terminal (typically http://localhost:5173).
 
 ## Environment Variables
 
-The following environment variables are required:
+| Variable | Purpose |
+|---|---|
+| MONGODB_URL | MongoDB connection string |
+| PORT | Backend HTTP port |
+| JWT_SECRET | Secret used to sign and verify JWTs |
+| GOOGLE_GENAI_API_KEY | API key used by the Gemini integration |
 
-| Variable             | Description                       |
-| -------------------- | --------------------------------- |
-| MONGODB_URL          | MongoDB database connection       |
-| JWT_SECRET           | Secret key for JWT authentication |
-| GOOGLE_GENAI_API_KEY | Google Gemini API key             |
-| PORT                 | Backend server port               |
+Keep credentials in your local .env file or deployment environment. **Never commit real API keys, database credentials, or JWT secrets.**
 
-Do not commit the `.env` file to GitHub.
+## API Reference
 
-## API Endpoints
+The following routes are mounted by the backend.
 
-### Authentication
+### Authentication — /api/auth
 
-```text
-POST /api/auth/register
-POST /api/auth/login
-POST /api/auth/logout
-GET /api/auth/getAll
-```
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | /api/auth/register | Register a user |
+| POST | /api/auth/login | Log in |
+| GET | /api/auth/logout | Log out |
+| GET | /api/auth/getAll | Get the authenticated user's account details |
 
-### Interview
+### Interview reports — /api/interview
 
-```text
-POST /api/interview/
-```
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | /api/interview/ | Upload a resume and generate an interview report |
+| GET | /api/interview/ | List the authenticated user's reports |
+| GET | /api/interview/report/:interviewId | Retrieve a report by ID |
+| POST | /api/interview/resume/pdf/:interviewReportId | Generate a resume PDF from a saved report |
 
-## Usage
+The report-generation endpoint expects a multipart form request containing:
 
-1. Register an account.
-2. Log in using your credentials.
-3. Upload your resume.
-4. Enter your self-description and job description.
-5. Generate an AI-powered interview report.
+- resume — PDF file (maximum upload size: 3 MB)
+- selfDescription — candidate self-description
+- jobDescription — target role description
+
+Protected routes require the application's authentication cookie/token.
+
+## Screenshots
+
+Screenshots have not been added yet. Add genuine application screenshots here when available, for example:
+
+- Dashboard / report list
+- Resume upload and job-description form
+- Generated interview report
+- Downloaded resume PDF
+
+## Future Improvements
+
+- Add automated backend and frontend tests.
+- Validate AI-generated responses against the Zod schema before persisting or returning them.
+- Add request validation, rate limiting, and centralized error handling.
+- Add end-to-end documentation and verified screenshots.
+- Strengthen authorization checks on every report-related operation.
 
 ## Author
 
-Your Name
+**Vipul Verma**
+- GitHub: https://github.com/VIPUL-2711
+- LinkedIn: https://www.linkedin.com/in/vipul-verma-2a2071276/
+
+---
 
 ## License
 
-This project is for educational and development purposes.
+No license file is currently specified in this repository. Contact the author for usage and distribution permissions.
